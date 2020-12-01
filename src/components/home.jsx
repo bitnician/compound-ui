@@ -1,54 +1,56 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useContext } from 'react';
+import { Jumbotron, Container, Row, Col } from 'reactstrap';
 import { useWeb3Context } from 'web3-react';
-import ConnectionBanner from '@rimble/connection-banner';
+import { EthContext } from '../contexts/ethContext';
+import _ from 'lodash';
+import Supply from './compound/supply';
+import Borrow from './compound/borrow';
+import Overview from './compound/overview';
 
 export default function Home() {
-  const context = useWeb3Context();
-
-  console.log(context);
+  const web3Context = useWeb3Context();
+  const { ethLibrary, setEthLibrary } = useContext(EthContext);
 
   useEffect(() => {
-    context.setFirstValidConnector(['MetaMask', 'Infura']);
+    web3Context.setFirstValidConnector(['MetaMask', 'Infura']);
   }, []);
 
-  let p;
+  useEffect(() => {
+    if (_.isEmpty(ethLibrary) && !_.isEmpty(web3Context.library)) setEthLibrary(web3Context.library.eth);
+  });
 
-  if (!context.active && !context.error) {
-    // loading
-    p = <p>loading</p>;
-  } else if (context.error) {
-    //error
-    p = <p>Error</p>;
-  } else {
-    // success
-    p = <p>success,{context.account}</p>;
-  }
+  // let p;
+
+  // if (!web3Context.active && !web3Context.error) {
+  //   // loading
+  //   p = <p>loading</p>;
+  // } else if (web3Context.error) {
+  //   //error
+  //   p = <p>Error</p>;
+  // } else {
+  //   // success
+  //   p = <p>success,{web3Context.account}</p>;
+  // }
 
   return (
     <>
-      <ConnectionBanner
-        currentNetwork={context.networkId}
-        requiredNetwork={+process.env.REACT_APP_REQUIRED_NETWORK}
-        onWeb3Fallback={!context.active && !context.error}
-      >
-        {/* {{
-          notWeb3CapableBrowserMessage: (
-            <div>
-              <p>Not a web3 capable browser</p>
-            </div>
-          ),
-          noNetworkAvailableMessage: (
-            <div>
-              <p>No Ethereum network available</p>
-            </div>
-          ),
-          onWrongNetworkMessage: (
-            <div>
-              <p>On wrong Ethereum network</p>
-            </div>
-          ),
-        }} */}
-      </ConnectionBanner>
+      <div>
+        <header>
+          <Overview></Overview>
+        </header>
+        <main>
+          <Container>
+            <Row>
+              <Col xs="6">
+                <Supply></Supply>
+              </Col>
+              <Col xs="6">
+                <Borrow></Borrow>
+              </Col>
+            </Row>
+          </Container>
+        </main>
+      </div>
     </>
   );
 }
