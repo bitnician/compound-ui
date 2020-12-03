@@ -5,7 +5,7 @@ const InputExample = (props) => {
   return (
     <div>
       <InputGroup>
-        <Input />
+        <Input onChange={props.onChange} name={props.name} type={props.type} />
         <InputGroupAddon addonType="append">
           <InputGroupText>{props.label}</InputGroupText>
         </InputGroupAddon>
