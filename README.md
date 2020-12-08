@@ -15,7 +15,7 @@ https://github.com/compound-finance/compound-protocol
 you need to install the solidity@5. more information:
 https://docs.soliditylang.org/en/v0.7.5/installing-solidity.html
 
-### installing dependencies
+### Installing dependencies
 
 navigate into the repository and install dependencies:
 
@@ -52,7 +52,7 @@ We copied Kovan because all of the addresses will be the same in our Ganache CLI
 
 in the new terminal, run this command:
 
-ganache-cli -f https://kovan.infura.io/v3/<infuraProjectId> -m "<Your-Mnemonic>"
+ganache-cli -f https://kovan.infura.io/v3/$infuraProjectId -m "\$Your-Mnemonic"
 
 ### Deploy the Compound
 
