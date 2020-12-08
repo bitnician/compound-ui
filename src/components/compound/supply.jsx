@@ -384,7 +384,7 @@ class Supply extends Component {
               <td>
                 <div>
                   <CustomInput
-                    onChange={this.handleOnChangeCollateral}
+                    onChange={(e) => this.handleOnChangeCollateral(e, daiInfo)}
                     type="switch"
                     checked={daiInfo.hasCollateral}
                     id="swithDaiCollateral"
