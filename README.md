@@ -1,70 +1,68 @@
-# Getting Started with Create React App
+# Cloning the compound repo
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+First, you need to clone the compound repository.
 
-## Available Scripts
+If you are using macOS, you may face an issue related to the shasum package. so, I suggest you use my forked repo of compound:
+https://github.com/bitnician/compound-protocol
 
-In the project directory, you can run:
+otherwise, go ahead and use the main repo of compound protocol:
+https://github.com/compound-finance/compound-protocol
 
-### `yarn start`
+# Setting up an Ethereum Development Environment
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+### Installing the Solidity Compiler (solc)
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+you need to install the solidity@5. more information:
+https://docs.soliditylang.org/en/v0.7.5/installing-solidity.html
 
-### `yarn test`
+### installing dependencies
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+navigate into the repository and install dependencies:
 
-### `yarn build`
+```
+   cd compound-protocol/
+   yarn install
+```
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+### Adding a local network configuration in saddle.js (it's something like truffle.js)
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+go to our text editor and open saddle.config.js in the project root folder. We’ll duplicate the development object within the networks object. The duplicate should be named something like local_fork.
+In the providers array of local_fork, we’ll remove the second object that begins with ganache. Instead, we’ll replace the entire second object with a localhost JSON RPC URL. The local_fork’s providers array should now look like the following:
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+```
+providers: [
+  {env: "PROVIDER"},
+  {http: "http://127.0.0.1:8545"}
+],
+```
 
-### `yarn eject`
+### Making a new network config file for local_fork
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+This can be done by copying the Kovan configuration and naming it local_fork.json. From the root directory of the project, run the following command.
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+```
+cp networks/kovan.json networks/local_fork.json
+```
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+We copied Kovan because all of the addresses will be the same in our Ganache CLI network fork.
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+# Running local blockchain and deploying the contract
 
-## Learn More
+### Running the ganache
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+in the new terminal, run this command:
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+ganache-cli -f https://kovan.infura.io/v3/<infuraProjectId> -m "<Your-Mnemonic>"
 
-### Code Splitting
+### Deploy the Compound
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+To deploy compound, run the following command:
 
-### Analyzing the Bundle Size
+```
+yarn repl -n local_fork
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+```
 
-### Making a Progressive Web App
+# Running Interface
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `yarn build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+clone this react app, install its dependecies and run `npm start`
