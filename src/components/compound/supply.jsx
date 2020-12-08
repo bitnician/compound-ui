@@ -55,7 +55,7 @@ class Supply extends Component {
   };
 
   handleOnChangeCollateral = async (e, assetInfo) => {
-    const web3 = new Web3(Web3.givenProvider);
+    const web3 = new Web3(Web3.givenProvider || 'http://localhost:8545');
 
     const cContractAddress = assetInfo.cContractAddress;
 
@@ -119,7 +119,7 @@ class Supply extends Component {
   };
 
   isApproved = async (assetInfo) => {
-    const web3 = new Web3(Web3.givenProvider);
+    const web3 = new Web3(Web3.givenProvider || 'http://localhost:8545');
 
     const daiContractAddress = assetInfo.contractAddress;
     const cDaiContractAddress = assetInfo.cContractAddress;
@@ -145,7 +145,7 @@ class Supply extends Component {
   };
 
   handleOnClickEnable = async (assetInfo) => {
-    const web3 = new Web3(Web3.givenProvider);
+    const web3 = new Web3(Web3.givenProvider || 'http://localhost:8545');
 
     const daiContractAddress = assetInfo.contractAddress;
     const cDaiContractAddress = assetInfo.cContractAddress;
@@ -171,7 +171,7 @@ class Supply extends Component {
   getBalanceOfEth = async () => {
     const { etherInfo } = this.state;
 
-    const web3 = new Web3(Web3.givenProvider);
+    const web3 = new Web3(Web3.givenProvider || 'http://localhost:8545');
 
     const accounts = await web3.eth.getAccounts();
     const walletAddress = accounts[0];
@@ -188,7 +188,7 @@ class Supply extends Component {
   getBalanceOfDai = async () => {
     const { daiInfo } = this.state;
 
-    const web3 = new Web3(Web3.givenProvider);
+    const web3 = new Web3(Web3.givenProvider || 'http://localhost:8545');
 
     const daiContractAddress = process.env.REACT_APP_DAI_ADDRESS;
 
@@ -211,7 +211,7 @@ class Supply extends Component {
   getUnderlyingBalanceOfEth = async () => {
     const { etherInfo } = this.state;
 
-    const web3 = new Web3(Web3.givenProvider);
+    const web3 = new Web3(Web3.givenProvider || 'http://localhost:8545');
 
     const cEthContractAddress = process.env.REACT_APP_CETH_ADDRESS;
 
@@ -239,7 +239,7 @@ class Supply extends Component {
   getUnderlyingBalanceOfDai = async () => {
     const { daiInfo } = this.state;
 
-    const web3 = new Web3(Web3.givenProvider);
+    const web3 = new Web3(Web3.givenProvider || 'http://localhost:8545');
 
     const cDaiContractAddress = process.env.REACT_APP_CDAI_ADDRESS;
 
@@ -267,7 +267,7 @@ class Supply extends Component {
 
   getAssetsIn = async () => {
     const { etherInfo, daiInfo } = this.state;
-    const web3 = new Web3(Web3.givenProvider);
+    const web3 = new Web3(Web3.givenProvider || 'http://localhost:8545');
 
     const comptrollerAddress = process.env.REACT_APP_COMPTROLLER_ADDRESS;
     const { abi: comptrollerAbiJson } = abi.Comptroller;
@@ -323,15 +323,14 @@ class Supply extends Component {
               <td>{etherInfo.underlyingBalance}</td>
               <td>
                 <div>
-                  {etherInfo.underlyingBalance ? (
-                    <CustomInput
-                      onChange={async (e) => await this.handleOnChangeCollateral(e, etherInfo)}
-                      type="switch"
-                      checked={etherInfo.hasCollateral}
-                      id="swithEthCollateral"
-                      name="customSwitch"
-                    />
-                  ) : null}
+                  <CustomInput
+                    onChange={async (e) => await this.handleOnChangeCollateral(e, etherInfo)}
+                    type="switch"
+                    checked={etherInfo.hasCollateral}
+                    id="swithEthCollateral"
+                    name="customSwitch"
+                    disabled={etherInfo.underlyingBalance ? false : true}
+                  />
                 </div>
               </td>
             </tr>
@@ -352,15 +351,14 @@ class Supply extends Component {
               <td>{daiInfo.underlyingtBalance}</td>
               <td>
                 <div>
-                  {daiInfo.underlyingtBalance ? (
-                    <CustomInput
-                      onChange={this.handleOnChangeCollateral}
-                      type="switch"
-                      checked={daiInfo.hasCollateral}
-                      id="swithDaiCollateral"
-                      name="customSwitch"
-                    />
-                  ) : null}
+                  <CustomInput
+                    onChange={this.handleOnChangeCollateral}
+                    type="switch"
+                    checked={daiInfo.hasCollateral}
+                    id="swithDaiCollateral"
+                    name="customSwitch"
+                    disabled={daiInfo.underlyingtBalance ? false : true}
+                  />
                 </div>
               </td>
             </tr>
