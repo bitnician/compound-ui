@@ -24,9 +24,9 @@ navigate into the repository and install dependencies:
    yarn install
 ```
 
-### Adding a local network configuration in saddle.js (it's something like truffle.js)
+### Adding a local network configuration in saddle.config.js (it's something like truffle-config.js)
 
-go to our text editor and open saddle.config.js in the project root folder. We’ll duplicate the development object within the networks object. The duplicate should be named something like local_fork.
+Open saddle.config.js in the project root folder. We’ll duplicate the development object within the networks object. The duplicate should be named something like local_fork.
 In the providers array of local_fork, we’ll remove the second object that begins with ganache. Instead, we’ll replace the entire second object with a localhost JSON RPC URL. The local_fork’s providers array should now look like the following:
 
 ```
