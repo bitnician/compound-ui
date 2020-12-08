@@ -64,7 +64,7 @@ class ModalForm extends Component {
         <p>Borrow Limit: {obj.borrowLimit}</p>
         <p>Borrow Limit Used: {obj.borrowLimitUsed}</p>
         <hr />
-        <Button onClick={this.props.onClickSupply} color="primary">
+        <Button onClick={() => this.props.onClickSupply(obj)} color="primary">
           Supply
         </Button>
       </div>

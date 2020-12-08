@@ -5,6 +5,8 @@ import Web3 from 'web3';
 import { EthContext } from '../../contexts/ethContext';
 import abi from '../../abi/contracts.json';
 import { roundToTwo } from '../../utils/utils';
+import _ from 'lodash';
+const bigNumber = require('big-number');
 
 class Supply extends Component {
   static contextType = EthContext;
@@ -12,6 +14,7 @@ class Supply extends Component {
   state = {
     etherInfo: {
       title: 'Ether',
+      key: 'etherInfo',
       supplyAPY: 12.4,
       distributionAPY: 0,
       borrowLimit: 7.07,
@@ -24,6 +27,7 @@ class Supply extends Component {
     },
     daiInfo: {
       title: 'Dai',
+      key: 'daiInfo',
       supplyAPY: 10.4,
       distributionAPY: 0,
       borrowLimit: 1.07,
@@ -55,6 +59,7 @@ class Supply extends Component {
   };
 
   handleOnChangeCollateral = async (e, assetInfo) => {
+    const state = this.state;
     const web3 = new Web3(Web3.givenProvider || 'http://localhost:8545');
 
     const cContractAddress = assetInfo.cContractAddress;
@@ -65,36 +70,63 @@ class Supply extends Component {
 
     const accounts = await web3.eth.getAccounts();
     const walletAddress = accounts[0];
+    console.log(assetInfo);
+    console.log(state);
 
-    if (assetInfo.hasCollateral) {
+    const asset = _.filter(state, (asset) => asset === assetInfo)[0];
+
+    if (asset.hasCollateral) {
       await comptrollerContract.methods.exitMarket(cContractAddress).send({
         from: walletAddress,
+      });
+      asset.hasCollateral = false;
+
+      this.setState({
+        'asset.key': asset,
       });
     }
     if (!assetInfo.hasCollateral) {
       await comptrollerContract.methods.enterMarkets([cContractAddress]).send({
         from: walletAddress,
       });
+      asset.hasCollateral = true;
+      this.setState({
+        'asset.key': asset,
+      });
     }
   };
 
-  handleOnClickSupply = async () => {
-    const { value } = this.state;
+  handleOnClickSupply = async (assetInfo) => {
+    const state = this.state;
     const { ethLibrary } = this.context;
 
-    const contractAddress = process.env.REACT_APP_CETH_ADDRESS;
-    const { abi: abiJson } = abi.CEth;
+    const cEthcontractAddress = process.env.REACT_APP_CETH_ADDRESS;
+    const cDaiContractAddress = process.env.REACT_APP_CDAI_ADDRESS;
+    const { abi: cEthAbiJson } = abi.CEth;
+    const { abi: cErc20AbiJson } = abi.CErc20;
 
-    const cEthContract = new ethLibrary.Contract(JSON.parse(abiJson), contractAddress);
+    const cEthContract = new ethLibrary.Contract(JSON.parse(cEthAbiJson), cEthcontractAddress);
+    const cDaiContract = new ethLibrary.Contract(JSON.parse(cErc20AbiJson), cDaiContractAddress);
 
     const ethDecimals = 18;
     const accounts = await ethLibrary.getAccounts();
     const walletAddress = accounts[0];
 
-    await cEthContract.methods.mint().send({
-      from: walletAddress,
-      value: Web3.utils.toHex(Web3.utils.toWei(value.toString(), 'ether')),
-    });
+    const asset = _.filter(state, (asset) => asset.key === assetInfo.key)[0];
+
+    if (asset.isErc20) {
+      const amount = state.value * Math.pow(10, 18);
+
+      await cDaiContract.methods.mint(Web3.utils.toBN(amount.toString())).send({
+        from: walletAddress,
+      });
+    }
+    if (!asset.isErc20) {
+      await cEthContract.methods.mint().send({
+        from: walletAddress,
+        value: Web3.utils.toHex(Web3.utils.toWei(state.value.toString(), 'ether')),
+      });
+    }
   };
 
   handleOnClickWithdraw = async () => {
@@ -156,8 +188,8 @@ class Supply extends Component {
 
     const accounts = await web3.eth.getAccounts();
     const walletAddress = accounts[0];
-
-    await daiContract.methods.approve(cDaiContractAddress, web3.utils.toBN(2 ^ 256)).send({
+    const unlimitedAmount = bigNumber(2).power(256).minus(1);
+    await daiContract.methods.approve(cDaiContractAddress, unlimitedAmount).send({
       from: walletAddress,
     });
 
