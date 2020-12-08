@@ -54,9 +54,9 @@ in the new terminal, run this command:
 
 ganache-cli -f https://kovan.infura.io/v3/$infuraProjectId -m "\$Your-Mnemonic"
 
-### Deploy the Compound
+### Deploy the Compound Contracts
 
-To deploy compound, run the following command:
+To deploy compound contracts, run the following command:
 
 ```
 yarn repl -n local_fork
