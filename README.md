@@ -19,30 +19,20 @@ https://docs.soliditylang.org/en/v0.7.5/installing-solidity.html
 
 navigate into the repository and install dependencies:
 
-```
-   cd compound-protocol/
-   yarn install
-```
+` cd compound-protocol/ yarn install`
 
 ### Adding a local network configuration in saddle.js (it's something like truffle.js)
 
 go to our text editor and open saddle.config.js in the project root folder. We’ll duplicate the development object within the networks object. The duplicate should be named something like local_fork.
 In the providers array of local_fork, we’ll remove the second object that begins with ganache. Instead, we’ll replace the entire second object with a localhost JSON RPC URL. The local_fork’s providers array should now look like the following:
 
-```
-providers: [
-  {env: "PROVIDER"},
-  {http: "http://127.0.0.1:8545"}
-],
-```
+`providers: [ {env: "PROVIDER"}, {http: "http://127.0.0.1:8545"} ],`
 
 ### Making a new network config file for local_fork
 
 This can be done by copying the Kovan configuration and naming it local_fork.json. From the root directory of the project, run the following command.
 
-```
-cp networks/kovan.json networks/local_fork.json
-```
+`cp networks/kovan.json networks/local_fork.json`
 
 We copied Kovan because all of the addresses will be the same in our Ganache CLI network fork.
 
@@ -58,10 +48,10 @@ ganache-cli -f https://kovan.infura.io/v3/<infuraProjectId> -m "<Your-Mnemonic>"
 
 To deploy compound, run the following command:
 
-```
+`
 yarn repl -n local_fork
 
-```
+`
 
 # Running Interface
 
