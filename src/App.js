@@ -6,11 +6,11 @@ import Home from './components/home';
 import Menu from './components/menu';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import EthProvider from './contexts/ethContext';
+
 import ContractProvider from './contexts/contractContext';
 
 function getLibrary(provider) {
   const library = new Web3Provider(provider);
-  library.pollingInterval = 12000;
   return library;
 }
 

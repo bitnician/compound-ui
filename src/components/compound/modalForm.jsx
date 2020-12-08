@@ -14,16 +14,42 @@ class ModalForm extends Component {
     const withdrawTab = { title: 'Withdraw', markUp: this.withdrawMarkUp({ ...obj }) };
     const modalTabs = [supplyTab, withdrawTab];
 
+    let markUp;
+
+    if (obj.isErc20 && !obj.isApproved) {
+      markUp = this.enableMarkUp(obj);
+    }
+
+    if ((obj.isErc20 && obj.isApproved) || !obj.isErc20) {
+      markUp = (
+        <Container fluid>
+          <div>
+            <Input name="value" type="number" onChange={this.props.onChangeInput} label={obj.title}></Input>
+          </div>
+          <div>
+            <Tabs tabs={modalTabs}></Tabs>
+          </div>
+        </Container>
+      );
+    }
+
+    return markUp;
+  };
+
+  enableMarkUp = (obj) => {
     const markUp = (
       <Container fluid>
         <div>
-          <Input name="value" type="number" onChange={this.props.onChangeInput} label={obj.title}></Input>
+          <p>To Supply or Repay {obj.title} Stablecoin to the Compound Protocol, you need to enable it first.</p>
         </div>
         <div>
-          <Tabs tabs={modalTabs}></Tabs>
+          <Button onClick={() => this.props.onClickEnable(obj)} color="primary">
+            Enable
+          </Button>
         </div>
       </Container>
     );
+
     return markUp;
   };
 

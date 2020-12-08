@@ -9,6 +9,7 @@ import Overview from './compound/overview';
 
 export default function Home() {
   const web3Context = useWeb3Context();
+
   const { ethLibrary, setEthLibrary } = useContext(EthContext);
 
   useEffect(() => {
@@ -16,7 +17,13 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    if (_.isEmpty(ethLibrary) && !_.isEmpty(web3Context.library)) setEthLibrary(web3Context.library.eth);
+    console.log('Hi mate');
+
+    if (_.isEmpty(ethLibrary) && !_.isEmpty(web3Context.library)) {
+      console.log('Hi again from use effect');
+
+      setEthLibrary(web3Context.library.eth);
+    }
   });
 
   // let p;
