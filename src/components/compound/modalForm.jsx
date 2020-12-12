@@ -9,22 +9,22 @@ class ModalForm extends Component {
     value: 0,
   };
 
-  modalMarkUp = (obj) => {
-    const supplyTab = { title: 'Supply', markUp: this.supplyMarkUp({ ...obj }) };
-    const withdrawTab = { title: 'Withdraw', markUp: this.withdrawMarkUp({ ...obj }) };
+  modalMarkUp = (asset) => {
+    const supplyTab = { title: 'Supply', markUp: this.supplyMarkUp({ ...asset }) };
+    const withdrawTab = { title: 'Withdraw', markUp: this.withdrawMarkUp({ ...asset }) };
     const modalTabs = [supplyTab, withdrawTab];
 
     let markUp;
 
-    if (obj.isErc20 && !obj.isApproved) {
-      markUp = this.enableMarkUp(obj);
+    if (asset.isErc20 && !asset.isApproved) {
+      markUp = this.enableMarkUp(asset);
     }
 
-    if ((obj.isErc20 && obj.isApproved) || !obj.isErc20) {
+    if ((asset.isErc20 && asset.isApproved) || !asset.isErc20) {
       markUp = (
         <Container fluid>
           <div>
-            <Input name="value" type="number" onChange={this.props.onChangeInput} label={obj.title}></Input>
+            <Input name="value" type="number" onChange={this.props.onChangeInput} label={asset.title}></Input>
           </div>
           <div>
             <Tabs tabs={modalTabs}></Tabs>
@@ -36,14 +36,17 @@ class ModalForm extends Component {
     return markUp;
   };
 
-  enableMarkUp = (obj) => {
+  enableMarkUp = (asset) => {
     const markUp = (
       <Container fluid>
         <div>
-          <p>To Supply or Repay {obj.title} Stablecoin to the Compound Protocol, you need to enable it first.</p>
+          <p>
+            To Supply or Repay {asset.title.toUpperCase()} Stablecoin to the Compound Protocol, you need to enable it
+            first.
+          </p>
         </div>
         <div>
-          <Button onClick={() => this.props.onClickEnable(obj)} color="primary">
+          <Button onClick={() => this.props.onClickEnable(asset)} color="primary">
             Enable
           </Button>
         </div>
@@ -53,18 +56,18 @@ class ModalForm extends Component {
     return markUp;
   };
 
-  supplyMarkUp = (obj) => {
+  supplyMarkUp = (asset) => {
     const markup = (
       <div>
         <h4>Supply Rate</h4>
-        <p>Supply APY: {obj.supplyAPY}</p>
-        <p>Distribution APY: {obj.distributionAPY}</p>
+        <p>Supply APY: {asset.supplyAPY}</p>
+        <p>Distribution APY: {asset.distributionAPY}</p>
         <hr />
         <h4>Borrow Limit</h4>
-        <p>Borrow Limit: {obj.borrowLimit}</p>
-        <p>Borrow Limit Used: {obj.borrowLimitUsed}</p>
+        <p>Borrow Limit: {asset.borrowLimit}</p>
+        <p>Borrow Limit Used: {asset.borrowLimitUsed}</p>
         <hr />
-        <Button onClick={() => this.props.onClickSupply(obj)} color="primary">
+        <Button onClick={() => this.props.onClickSupply(asset)} color="primary">
           Supply
         </Button>
       </div>
@@ -72,16 +75,16 @@ class ModalForm extends Component {
     return markup;
   };
 
-  withdrawMarkUp = (obj) => {
+  withdrawMarkUp = (asset) => {
     const markup = (
       <div>
         <h4>Supply Rate</h4>
-        <p>Supply APY: {obj.supplyAPY}</p>
-        <p>Distribution APY: {obj.distributionAPY}</p>
+        <p>Supply APY: {asset.supplyAPY}</p>
+        <p>Distribution APY: {asset.distributionAPY}</p>
         <hr />
         <h4>Borrow Limit</h4>
-        <p>Borrow Limit: {obj.borrowLimit}</p>
-        <p>Borrow Limit Used: {obj.borrowLimitUsed}</p>
+        <p>Borrow Limit: {asset.borrowLimit}</p>
+        <p>Borrow Limit Used: {asset.borrowLimitUsed}</p>
         <hr />
         <Button onClick={this.props.onClickWithdraw} color="primary">
           Withdraw

@@ -1,404 +1,300 @@
-import React, { Component } from 'react';
-import ModalForm from './modalForm';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Table, CustomInput } from 'reactstrap';
-import Web3 from 'web3';
-import { EthContext } from '../../contexts/ethContext';
-import abi from '../../abi/contracts.json';
+import ModalForm from './modalForm';
+import ABIs from '../../abi/contracts.json';
 import { roundToTwo } from '../../utils/utils';
 import _ from 'lodash';
+import { useWeb3React } from '@web3-react/core';
 const bigNumber = require('big-number');
 
-class Supply extends Component {
-  static contextType = EthContext;
+const Supply = () => {
+  const eth = {
+    title: 'eth',
+    decimals: 18,
+    supplyAPY: 12.4,
+    distributionAPY: 0,
+    borrowLimit: 7.07,
+    borrowLimitUsed: 0,
+    underlyingBalance: 0,
+    cTokenBalance: 0,
+    walletBalance: 0,
+    hasCollateral: false,
+    cContractAddress: process.env.REACT_APP_CETH_ADDRESS,
+    cContractAbi: JSON.parse(ABIs.CEth.abi),
+    isErc20: false,
+  };
 
-  state = {
-    etherInfo: {
-      title: 'Ether',
-      key: 'etherInfo',
-      supplyAPY: 12.4,
-      distributionAPY: 0,
-      borrowLimit: 7.07,
-      borrowLimitUsed: 0,
-      underlyingBalance: 0,
-      walletBalance: 0,
-      hasCollateral: false,
-      cContractAddress: process.env.REACT_APP_CETH_ADDRESS,
-      isErc20: false,
+  const dai = {
+    title: 'dai',
+    decimals: 18,
+    supplyAPY: 10.4,
+    distributionAPY: 0,
+    borrowLimit: 1.07,
+    borrowLimitUsed: 0,
+    underlyingBalance: 0,
+    cTokenBalance: 0,
+    walletBalance: 0,
+    hasCollateral: false,
+    cContractAddress: process.env.REACT_APP_CDAI_ADDRESS,
+    cContractAbi: JSON.parse(ABIs.CErc20.abi),
+    contractAddress: process.env.REACT_APP_DAI_ADDRESS,
+    isErc20: true,
+  };
+
+  const web3Context = useWeb3React();
+  const [assets, updateAssets] = useState([eth, dai]);
+  const [amount, setAmount] = useState(0);
+  const [comptroller] = useState({
+    address: process.env.REACT_APP_COMPTROLLER_ADDRESS,
+    abi: JSON.parse(ABIs.Comptroller.abi),
+  });
+
+  const getAssetsBalance = useCallback(
+    async (assets) => {
+      const walletAddress = web3Context.account;
+      const ethLibrary = web3Context.library.eth;
+
+      const assetsPromise = assets.map(async (item) => {
+        if (item.isErc20) {
+          const erc20Contract = new ethLibrary.Contract(item.cContractAbi, item.contractAddress);
+          const cErc20Contract = new ethLibrary.Contract(item.cContractAbi, item.cContractAddress);
+
+          const balanceOfUnderlyingErc20 =
+            (await cErc20Contract.methods.balanceOfUnderlying(walletAddress).call()) / Math.pow(10, item.decimals);
+
+          const balanceOfWelletErc20 =
+            (await erc20Contract.methods.balanceOf(walletAddress).call()) / Math.pow(10, item.decimals);
+
+          item.underlyingBalance = roundToTwo(balanceOfUnderlyingErc20);
+          item.walletBalance = roundToTwo(balanceOfWelletErc20);
+
+          return item;
+        }
+
+        if (!item.isErc20) {
+          const balanceInWei = await ethLibrary.getBalance(walletAddress);
+          const balnceInEther = web3Context.library.utils.fromWei(balanceInWei, 'ether');
+
+          const cEthContract = new ethLibrary.Contract(item.cContractAbi, item.cContractAddress);
+          const balanceOfcEth =
+            web3Context.library.utils.toBN(await cEthContract.methods.balanceOfUnderlying(walletAddress).call()) /
+            Math.pow(10, item.decimals);
+
+          item.walletBalance = roundToTwo(balnceInEther);
+          item.underlyingBalance = roundToTwo(balanceOfcEth);
+          return item;
+        }
+      });
+
+      const updatedAssets = await Promise.all(assetsPromise);
+      updateAssets(updatedAssets);
     },
-    daiInfo: {
-      title: 'Dai',
-      key: 'daiInfo',
-      supplyAPY: 10.4,
-      distributionAPY: 0,
-      borrowLimit: 1.07,
-      borrowLimitUsed: 0,
-      underlyingtBalance: 0,
-      walletBalance: 0,
-      hasCollateral: false,
-      cContractAddress: process.env.REACT_APP_CDAI_ADDRESS,
-      contractAddress: process.env.REACT_APP_DAI_ADDRESS,
-      isErc20: true,
+    [web3Context]
+  );
+
+  const isApproved = useCallback(
+    async (assets) => {
+      const walletAddress = web3Context.account;
+      const ethLibrary = web3Context.library.eth;
+
+      const updatedAssetsPromis = assets.map(async (item) => {
+        if (item.isErc20) {
+          const erc20ContractAddress = item.contractAddress;
+          const cErc20ContractAddress = item.cContractAddress;
+
+          const erc20Contract = new ethLibrary.Contract(item.cContractAbi, erc20ContractAddress);
+
+          const result = await erc20Contract.methods.allowance(walletAddress, cErc20ContractAddress).call({
+            from: walletAddress,
+          });
+
+          if (result && result > 0) {
+            item.isApproved = true;
+          }
+        }
+
+        return item;
+      });
+
+      const updatedAssets = await Promise.all(updatedAssetsPromis);
+      updateAssets(updatedAssets);
     },
-  };
+    [web3Context]
+  );
 
-  async componentDidMount() {
-    const { daiInfo } = this.state;
-    await Promise.all([
-      await this.getUnderlyingBalanceOfEth(),
-      await this.getUnderlyingBalanceOfDai(),
-      await this.getBalanceOfEth(),
-      await this.getBalanceOfDai(),
-      await this.getAssetsIn(),
-      await this.isApproved(daiInfo),
-    ]);
-  }
-  handleOnChangeInput = ({ currentTarget: input }) => {
-    this.setState({
-      value: input.value,
-    });
-  };
+  const getAssetsIn = useCallback(
+    async (assets) => {
+      const walletAddress = web3Context.account;
+      const ethLibrary = web3Context.library.eth;
 
-  handleOnChangeCollateral = async (e, assetInfo) => {
-    const state = this.state;
-    const web3 = new Web3(Web3.givenProvider || 'http://localhost:8545');
+      const comptrollerContract = new ethLibrary.Contract(comptroller.abi, comptroller.address);
 
-    const cContractAddress = assetInfo.cContractAddress;
+      const results = await comptrollerContract.methods.getAssetsIn(walletAddress).call();
 
-    const comptrollerAddress = process.env.REACT_APP_COMPTROLLER_ADDRESS;
-    const { abi: comptrollerAbiJson } = abi.Comptroller;
-    const comptrollerContract = new web3.eth.Contract(JSON.parse(comptrollerAbiJson), comptrollerAddress);
+      const updatedAssets = assets.map((item) => {
+        if (results.includes(item.cContractAddress)) {
+          item.hasCollateral = true;
+        }
+        return item;
+      });
 
-    const accounts = await web3.eth.getAccounts();
-    const walletAddress = accounts[0];
-    console.log(assetInfo);
-    console.log(state);
+      updateAssets(updatedAssets);
+    },
+    [web3Context, comptroller]
+  );
 
-    const asset = _.filter(state, (asset) => asset === assetInfo)[0];
+  useEffect(() => {
+    if (web3Context.active) {
+      getAssetsBalance(assets);
+      isApproved(assets);
+      getAssetsIn(assets);
+    }
+  }, [web3Context, assets, getAssetsBalance, isApproved, getAssetsIn]);
 
-    if (asset.hasCollateral) {
-      await comptrollerContract.methods.exitMarket(cContractAddress).send({
+  const handleOnChangeAmount = useCallback(({ currentTarget: input }) => {
+    setAmount(input.value);
+  }, []);
+
+  const handleOnClickEnable = useCallback(
+    async (asset) => {
+      const walletAddress = web3Context.account;
+      const ethLibrary = web3Context.library.eth;
+
+      const erc20ContractAddress = asset.contractAddress;
+      const cErc20ContractAddress = asset.cContractAddress;
+
+      const erc20Contract = new ethLibrary.Contract(asset.cContractAbi, erc20ContractAddress);
+
+      const unlimitedAmount = bigNumber(2).power(256).minus(1);
+      await erc20Contract.methods.approve(cErc20ContractAddress, unlimitedAmount).send({
         from: walletAddress,
       });
-      asset.hasCollateral = false;
 
-      this.setState({
-        'asset.key': asset,
+      const updatedAssets = assets.map((item) => {
+        if (item === asset) {
+          item.isApproved = true;
+          return item;
+        }
+        return item;
       });
-    }
-    if (!assetInfo.hasCollateral) {
-      await comptrollerContract.methods.enterMarkets([cContractAddress]).send({
-        from: walletAddress,
-      });
-      asset.hasCollateral = true;
-      this.setState({
-        'asset.key': asset,
-      });
-    }
-  };
-
-  handleOnClickSupply = async (assetInfo) => {
-    const state = this.state;
-    const { ethLibrary } = this.context;
-
-    const cEthcontractAddress = process.env.REACT_APP_CETH_ADDRESS;
-    const cDaiContractAddress = process.env.REACT_APP_CDAI_ADDRESS;
-    const { abi: cEthAbiJson } = abi.CEth;
-    const { abi: cErc20AbiJson } = abi.CErc20;
-
-    const cEthContract = new ethLibrary.Contract(JSON.parse(cEthAbiJson), cEthcontractAddress);
-    const cDaiContract = new ethLibrary.Contract(JSON.parse(cErc20AbiJson), cDaiContractAddress);
-
-    const ethDecimals = 18;
-    const accounts = await ethLibrary.getAccounts();
-    const walletAddress = accounts[0];
-
-    const asset = _.filter(state, (asset) => asset.key === assetInfo.key)[0];
-
-    if (asset.isErc20) {
-      const amount = state.value * Math.pow(10, 18);
-
-      await cDaiContract.methods.mint(Web3.utils.toBN(amount.toString())).send({
-        from: walletAddress,
-      });
-    }
-    if (!asset.isErc20) {
-      await cEthContract.methods.mint().send({
-        from: walletAddress,
-        value: Web3.utils.toHex(Web3.utils.toWei(state.value.toString(), 'ether')),
-      });
-    }
-  };
-
-  handleOnClickWithdraw = async () => {
-    const { value } = this.state;
-    console.log('from withdraw', value);
-
-    const { ethLibrary } = this.context;
-
-    const contractAddress = process.env.REACT_APP_CETH_ADDRESS;
-    const { abi: abiJson } = abi.CEth;
-    const cEthContract = new ethLibrary.Contract(abiJson, contractAddress);
-
-    const ethDecimals = 18;
-    const accounts = await ethLibrary.getAccounts();
-    const walletAddress = accounts[0];
-
-    let cTokenBalance = (await cEthContract.methods.balanceOf(walletAddress).call()) / 1e8;
-
-    await cEthContract.methods.redeem(cTokenBalance * 1e8).send({
-      from: walletAddress,
-    });
-  };
-
-  isApproved = async (assetInfo) => {
-    const web3 = new Web3(Web3.givenProvider || 'http://localhost:8545');
-
-    const daiContractAddress = assetInfo.contractAddress;
-    const cDaiContractAddress = assetInfo.cContractAddress;
-
-    const { abi: cErc20AbiJson } = abi.CErc20;
-
-    const daiContract = new web3.eth.Contract(JSON.parse(cErc20AbiJson), daiContractAddress);
-
-    const accounts = await web3.eth.getAccounts();
-    const walletAddress = accounts[0];
-
-    const result = await daiContract.methods.allowance(walletAddress, cDaiContractAddress).call({
-      from: walletAddress,
-    });
-
-    if (result && result > 0) {
-      assetInfo.isApproved = true;
-
-      this.setState({
-        daiInfo: assetInfo,
-      });
-    }
-  };
-
-  handleOnClickEnable = async (assetInfo) => {
-    const web3 = new Web3(Web3.givenProvider || 'http://localhost:8545');
-
-    const daiContractAddress = assetInfo.contractAddress;
-    const cDaiContractAddress = assetInfo.cContractAddress;
-
-    const { abi: cErc20AbiJson } = abi.CErc20;
-
-    const daiContract = new web3.eth.Contract(JSON.parse(cErc20AbiJson), daiContractAddress);
-
-    const accounts = await web3.eth.getAccounts();
-    const walletAddress = accounts[0];
-    const unlimitedAmount = bigNumber(2).power(256).minus(1);
-    await daiContract.methods.approve(cDaiContractAddress, unlimitedAmount).send({
-      from: walletAddress,
-    });
-
-    assetInfo.isApproved = true;
-
-    this.setState({
-      daiInfo: assetInfo,
-    });
-  };
-
-  getBalanceOfEth = async () => {
-    const { etherInfo } = this.state;
-
-    const web3 = new Web3(Web3.givenProvider || 'http://localhost:8545');
-
-    const accounts = await web3.eth.getAccounts();
-    const walletAddress = accounts[0];
-
-    const ethBalanceInWei = await web3.eth.getBalance(walletAddress);
-    const ethBalnceInEther = web3.utils.fromWei(ethBalanceInWei, 'ether');
-
-    etherInfo.walletBalance = roundToTwo(ethBalnceInEther);
-
-    this.setState({
-      etherInfo,
-    });
-  };
-  getBalanceOfDai = async () => {
-    const { daiInfo } = this.state;
-
-    const web3 = new Web3(Web3.givenProvider || 'http://localhost:8545');
-
-    const daiContractAddress = process.env.REACT_APP_DAI_ADDRESS;
-
-    const { abi: cErc20AbiJson } = abi.CErc20;
-
-    const daiContract = new web3.eth.Contract(JSON.parse(cErc20AbiJson), daiContractAddress);
-
-    const accounts = await web3.eth.getAccounts();
-    const walletAddress = accounts[0];
-
-    const balanceOfDai = (await daiContract.methods.balanceOf(walletAddress).call()) / 1e18;
-
-    daiInfo.walletBalance = roundToTwo(balanceOfDai);
-
-    this.setState({
-      daiInfo,
-    });
-  };
-
-  getUnderlyingBalanceOfEth = async () => {
-    const { etherInfo } = this.state;
-
-    const web3 = new Web3(Web3.givenProvider || 'http://localhost:8545');
-
-    const cEthContractAddress = process.env.REACT_APP_CETH_ADDRESS;
-
-    const { abi: cEthAbiJson } = abi.CEth;
-
-    const cEthContract = new web3.eth.Contract(JSON.parse(cEthAbiJson), cEthContractAddress);
-
-    const ethDecimals = 18;
-
-    const accounts = await web3.eth.getAccounts();
-    const walletAddress = accounts[0];
-    console.log(accounts);
-
-    const balanceOfEth =
-      Web3.utils.toBN(await cEthContract.methods.balanceOfUnderlying(walletAddress).call()) / Math.pow(10, ethDecimals);
-
-    let cTokenBalanceForEth = (await cEthContract.methods.balanceOf(walletAddress).call()) / 1e8;
-
-    etherInfo.underlyingBalance = roundToTwo(balanceOfEth);
-
-    this.setState({
-      etherInfo,
-    });
-  };
-  getUnderlyingBalanceOfDai = async () => {
-    const { daiInfo } = this.state;
-
-    const web3 = new Web3(Web3.givenProvider || 'http://localhost:8545');
-
-    const cDaiContractAddress = process.env.REACT_APP_CDAI_ADDRESS;
-
-    const { abi: cErc20AbiJson } = abi.CErc20;
-
-    const cDaiContract = new web3.eth.Contract(JSON.parse(cErc20AbiJson), cDaiContractAddress);
-
-    const ethDecimals = 18;
-
-    const accounts = await web3.eth.getAccounts();
-    const walletAddress = accounts[0];
-    console.log(accounts);
-
-    const balanceOfDai =
-      Web3.utils.toBN(await cDaiContract.methods.balanceOfUnderlying(walletAddress).call()) / Math.pow(10, ethDecimals);
-
-    let cTokenBalanceForDai = (await cDaiContract.methods.balanceOf(walletAddress).call()) / 1e8;
-
-    daiInfo.underlyingtBalance = roundToTwo(balanceOfDai);
-
-    this.setState({
-      daiInfo,
-    });
-  };
-
-  getAssetsIn = async () => {
-    const { etherInfo, daiInfo } = this.state;
-    const web3 = new Web3(Web3.givenProvider || 'http://localhost:8545');
-
-    const comptrollerAddress = process.env.REACT_APP_COMPTROLLER_ADDRESS;
-    const { abi: comptrollerAbiJson } = abi.Comptroller;
-
-    const comptrollerContract = new web3.eth.Contract(JSON.parse(comptrollerAbiJson), comptrollerAddress);
-
-    const accounts = await web3.eth.getAccounts();
-    const walletAddress = accounts[0];
-
-    const results = await comptrollerContract.methods.getAssetsIn(walletAddress).call();
-    if (results.includes(process.env.REACT_APP_CETH_ADDRESS)) {
-      etherInfo.hasCollateral = true;
-      this.setState({
-        etherInfo,
-      });
-    }
-    if (results.includes(process.env.REACT_APP_CDAI_ADDRESS)) {
-      daiInfo.hasCollateral = true;
-      this.setState({
-        daiInfo,
-      });
-    }
-  };
-
-  render() {
-    const { etherInfo, daiInfo } = this.state;
-
-    return (
-      <>
-        <h2 className="mb-5">Supply</h2>
-        <Table borderless>
-          <thead>
-            <tr>
-              <th>Asset</th>
-              <th>APY</th>
-              <th>Wallet</th>
-              <th>Underlying</th>
-              <th>Collateral</th>
-            </tr>
-          </thead>
-          <tbody>
+      updateAssets(updatedAssets);
+    },
+    [web3Context, assets]
+  );
+
+  const handleOnChangeCollateral = useCallback(
+    async (e, asset) => {
+      const walletAddress = web3Context.account;
+      const ethLibrary = web3Context.library.eth;
+
+      const cContractAddress = asset.cContractAddress;
+
+      const comptrollerContract = new ethLibrary.Contract(comptroller.abi, comptroller.address);
+
+      if (asset.hasCollateral) {
+        await comptrollerContract.methods.exitMarket(cContractAddress).send({
+          from: walletAddress,
+        });
+        const updatedAssets = assets.map((item) => {
+          if (item === asset) {
+            item.hasCollateral = false;
+            return item;
+          }
+          return item;
+        });
+        updateAssets(updatedAssets);
+      }
+
+      if (!asset.hasCollateral) {
+        await comptrollerContract.methods.enterMarkets([cContractAddress]).send({
+          from: walletAddress,
+        });
+        const updatedAssets = assets.map((item) => {
+          if (item === asset) {
+            item.hasCollateral = false;
+            return item;
+          }
+          return item;
+        });
+        updateAssets(updatedAssets);
+      }
+    },
+    [web3Context, assets, comptroller]
+  );
+
+  const handleOnClickSupply = useCallback(
+    async (asset) => {
+      const walletAddress = web3Context.account;
+      const ethLibrary = web3Context.library.eth;
+
+      const contractInstance = new ethLibrary.Contract(asset.cContractAbi, asset.cContractAddress);
+
+      if (asset.isErc20) {
+        const supplyAmount = amount * Math.pow(10, asset.decimals);
+
+        await contractInstance.methods.mint(web3Context.library.utils.toBN(supplyAmount.toString())).send({
+          from: walletAddress,
+        });
+      }
+      if (!asset.isErc20) {
+        await contractInstance.methods.mint().send({
+          from: walletAddress,
+          value: web3Context.library.utils.toHex(web3Context.library.utils.toWei(amount.toString(), 'ether')),
+        });
+      }
+    },
+    [web3Context, amount]
+  );
+
+  const handleOnClickWithdraw = useCallback(() => {}, []);
+
+  return (
+    <>
+      <h2 className="mb-5">Supply</h2>
+      <Table borderless>
+        <thead>
+          <tr>
+            <th>Asset</th>
+            <th>APY</th>
+            <th>Wallet</th>
+            <th>Underlying</th>
+            <th>Collateral</th>
+          </tr>
+        </thead>
+        <tbody>
+          {assets.map((asset) => (
             <tr>
               <th>
                 <ModalForm
-                  assetInfo={etherInfo}
-                  onChangeInput={this.handleOnChangeInput}
-                  onClickSupply={this.handleOnClickSupply}
-                  onClickWithdraw={this.handleOnClickWithdraw}
+                  assetInfo={asset}
+                  onChangeInput={handleOnChangeAmount}
+                  onClickSupply={handleOnClickSupply}
+                  onClickWithdraw={handleOnClickWithdraw}
+                  onClickEnable={handleOnClickEnable}
                 ></ModalForm>
               </th>
               <td>0.1%</td>
-              <td>{etherInfo.walletBalance}</td>
-              <td>{etherInfo.underlyingBalance}</td>
+              <td>{asset.walletBalance}</td>
+              <td>{asset.underlyingBalance}</td>
               <td>
                 <div>
                   <CustomInput
-                    onChange={async (e) => await this.handleOnChangeCollateral(e, etherInfo)}
+                    onChange={async (e) => await handleOnChangeCollateral(e, asset)}
                     type="switch"
-                    checked={etherInfo.hasCollateral}
+                    checked={asset.hasCollateral}
                     id="swithEthCollateral"
                     name="customSwitch"
-                    disabled={etherInfo.underlyingBalance ? false : true}
+                    disabled={asset.underlyingBalance ? false : true}
                   />
                 </div>
               </td>
             </tr>
-          </tbody>
-          <tbody>
-            <tr>
-              <th>
-                <ModalForm
-                  assetInfo={daiInfo}
-                  onChangeInput={this.handleOnChangeInput}
-                  onClickSupply={this.handleOnClickSupply}
-                  onClickWithdraw={this.handleOnClickWithdraw}
-                  onClickEnable={this.handleOnClickEnable}
-                ></ModalForm>
-              </th>
-              <td>0.1%</td>
-              <td>{daiInfo.walletBalance}</td>
-              <td>{daiInfo.underlyingtBalance}</td>
-              <td>
-                <div>
-                  <CustomInput
-                    onChange={(e) => this.handleOnChangeCollateral(e, daiInfo)}
-                    type="switch"
-                    checked={daiInfo.hasCollateral}
-                    id="swithDaiCollateral"
-                    name="customSwitch"
-                    disabled={daiInfo.underlyingtBalance ? false : true}
-                  />
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </Table>
-      </>
-    );
-  }
-}
+          ))}
+        </tbody>
+        <tbody></tbody>
+      </Table>
+    </>
+  );
+};
 
 export default Supply;

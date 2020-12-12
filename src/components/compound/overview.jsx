@@ -1,14 +1,14 @@
 import { Jumbotron, Container } from 'reactstrap';
 import ConnectionBanner from '@rimble/connection-banner';
-import { useWeb3Context } from 'web3-react';
+import { useWeb3React } from '@web3-react/core';
 
 const Overview = () => {
-  const web3Context = useWeb3Context();
+  const web3Context = useWeb3React();
   return (
     <Jumbotron fluid>
       <Container fluid>
         <ConnectionBanner
-          currentNetwork={web3Context.networkId}
+          currentNetwork={web3Context.chainId}
           requiredNetwork={+process.env.REACT_APP_REQUIRED_NETWORK}
           onWeb3Fallback={!web3Context.active && !web3Context.error}
         ></ConnectionBanner>

@@ -3,13 +3,18 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@ethersproject/providers": "^5.0.17",
+    "@ethersproject/units": "^5.0.8",
     "@rimble/connection-banner": "^1.2.3",
+    "@rimble/icons": "^1.1.0",
     "@rimble/network-indicator": "^1.2.3",
     "@testing-library/jest-dom": "^5.11.4",
     "@testing-library/react": "^11.1.0",
     "@testing-library/user-event": "^12.1.10",
+    "@walletconnect/web3-provider": "^1.3.1",
     "@web3-react/core": "^6.1.1",
     "@web3-react/frame-connector": "^6.0.9",
+    "@web3-react/injected-connector": "^6.0.7",
     "@web3-react/walletconnect-connector": "^6.1.6",
     "big-number": "^2.0.0",
     "bootstrap": "^4.5.3",
@@ -19,10 +24,12 @@
     "react-dom": "^17.0.1",
     "react-scripts": "4.0.1",
     "reactstrap": "^8.7.1",
+    "rimble-ui": "^0.14.0",
     "styled-components": "^5.2.1",
     "web-vitals": "^0.2.4",
     "web3": "^1.3.0",
-    "web3-react": "^5.0.5"
+    "web3-react": "^5.0.5",
+    "web3connect": "^1.0.0-beta.33"
   },
   "scripts": {
     "start": "react-scripts start",
