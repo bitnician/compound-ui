@@ -86,7 +86,7 @@ class ModalForm extends Component {
         <p>Borrow Limit: {asset.borrowLimit}</p>
         <p>Borrow Limit Used: {asset.borrowLimitUsed}</p>
         <hr />
-        <Button onClick={this.props.onClickWithdraw} color="primary">
+        <Button onClick={() => this.props.onClickWithdraw(asset)} color="primary">
           Withdraw
         </Button>
       </div>

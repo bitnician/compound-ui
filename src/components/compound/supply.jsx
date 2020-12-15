@@ -73,15 +73,17 @@ const Supply = () => {
 
         if (!item.isErc20) {
           const balanceInWei = await ethLibrary.getBalance(walletAddress);
-          const balnceInEther = web3Context.library.utils.fromWei(balanceInWei, 'ether');
+          const balnceOfEtherWallet = web3Context.library.utils.fromWei(balanceInWei, 'ether');
 
           const cEthContract = new ethLibrary.Contract(item.cContractAbi, item.cContractAddress);
-          const balanceOfcEth =
+
+          const balanceOfUnderlyingEth =
             web3Context.library.utils.toBN(await cEthContract.methods.balanceOfUnderlying(walletAddress).call()) /
             Math.pow(10, item.decimals);
 
-          item.walletBalance = roundToTwo(balnceInEther);
-          item.underlyingBalance = roundToTwo(balanceOfcEth);
+          item.walletBalance = roundToTwo(balnceOfEtherWallet);
+          item.underlyingBalance = roundToTwo(balanceOfUnderlyingEth);
+
           return item;
         }
       });
@@ -146,8 +148,8 @@ const Supply = () => {
   useEffect(() => {
     if (web3Context.active) {
       getAssetsBalance(assets);
-      isApproved(assets);
-      getAssetsIn(assets);
+      // isApproved(assets);
+      // getAssetsIn(assets);
     }
   }, [web3Context, assets, getAssetsBalance, isApproved, getAssetsIn]);
 
@@ -211,7 +213,7 @@ const Supply = () => {
         });
         const updatedAssets = assets.map((item) => {
           if (item === asset) {
-            item.hasCollateral = false;
+            item.hasCollateral = true;
             return item;
           }
           return item;
@@ -246,7 +248,32 @@ const Supply = () => {
     [web3Context, amount]
   );
 
-  const handleOnClickWithdraw = useCallback(() => {}, []);
+  const handleOnClickWithdraw = useCallback(
+    async (asset) => {
+      const walletAddress = web3Context.account;
+      const ethLibrary = web3Context.library.eth;
+
+      const contractInstance = new ethLibrary.Contract(asset.cContractAbi, asset.cContractAddress);
+
+      if (asset.isErc20) {
+        const withdrawAmount = amount * Math.pow(10, asset.decimals);
+
+        await contractInstance.methods
+          .redeemUnderlying(web3Context.library.utils.toBN(withdrawAmount.toString()))
+          .send({
+            from: walletAddress,
+          });
+      }
+      if (!asset.isErc20) {
+        await contractInstance.methods
+          .redeemUnderlying(web3Context.library.utils.toWei(amount.toString(), 'ether'))
+          .send({
+            from: walletAddress,
+          });
+      }
+    },
+    [web3Context, amount]
+  );
 
   return (
     <>
