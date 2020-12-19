@@ -1,138 +1,187 @@
-import React, { Component } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
+import { Table, CustomInput } from 'reactstrap';
 import ModalForm from './modalForm';
-import { Table, CustomInput, Container, Button } from 'reactstrap';
-import Web3 from 'web3';
-import { EthContext } from '../../contexts/ethContext';
-import abi from '../../abi/contracts.json';
-import Modal from '../modal';
-import Input from '../input';
-import Tabs from '../tabs';
+import ABIs from '../../abi/contracts.json';
+import { priceFeedAbi } from '../../abi/borrow.json';
+import { roundToTwo } from '../../utils/utils';
+import _ from 'lodash';
+import { useWeb3React } from '@web3-react/core';
+const bigNumber = require('big-number');
 
-class Supply extends Component {
-  static contextType = EthContext;
-
-  state = {
-    value: 0,
+const Borrow = () => {
+  const eth = {
+    title: 'eth',
+    decimals: 18,
+    supplyAPY: 12.4,
+    distributionAPY: 0,
+    borrowLimit: 7.07,
+    borrowLimitUsed: 0,
+    underlyingBalance: 0,
+    cTokenBalance: 0,
+    walletBalance: 0,
+    hasCollateral: false,
+    cContractAddress: process.env.REACT_APP_CETH_ADDRESS,
+    cContractAbi: JSON.parse(ABIs.CEth.abi),
+    isErc20: false,
   };
 
-  handleOnChangeInput = ({ currentTarget: input }) => {
-    this.setState({
-      value: input.value,
-    });
+  const dai = {
+    title: 'dai',
+    decimals: 18,
+    supplyAPY: 10.4,
+    distributionAPY: 0,
+    borrowLimit: 1.07,
+    borrowLimitUsed: 0,
+    underlyingBalance: 0,
+    cTokenBalance: 0,
+    walletBalance: 0,
+    hasCollateral: false,
+    cContractAddress: process.env.REACT_APP_CDAI_ADDRESS,
+    cContractAbi: JSON.parse(ABIs.CErc20.abi),
+    contractAddress: process.env.REACT_APP_DAI_ADDRESS,
+    isErc20: true,
   };
 
-  handleOnClickSupply = async () => {
-    const { value } = this.state;
+  const web3Context = useWeb3React();
+  const [assets, updateAssets] = useState([eth, dai]);
+  const [amount, setAmount] = useState(0);
+  const [comptroller] = useState({
+    address: process.env.REACT_APP_COMPTROLLER_ADDRESS,
+    abi: JSON.parse(ABIs.Comptroller.abi),
+  });
+  const [priceFeed] = useState({
+    address: process.env.REACT_APP_PRICEFEED_ADDRESS,
+    abi: priceFeedAbi,
+  });
 
-    const { ethLibrary } = this.context;
+  useEffect(() => {
+    if (web3Context.active) {
+    }
+  }, []);
 
-    const contractAddress = process.env.REACT_APP_CETH_ADDRESS;
-    const abiJson = abi.cEthAbi;
+  const handleOnChangeAmount = useCallback(({ currentTarget: input }) => {
+    setAmount(input.value);
+  }, []);
 
-    const cEthContract = new ethLibrary.Contract(abiJson, contractAddress);
+  const handleOnClickEnable = useCallback(
+    async (asset) => {
+      const walletAddress = web3Context.account;
+      const ethLibrary = web3Context.library.eth;
 
-    const ethDecimals = 18;
-    const accounts = await ethLibrary.getAccounts();
-    const walletAddress = accounts[0];
+      const erc20ContractAddress = asset.contractAddress;
+      const cErc20ContractAddress = asset.cContractAddress;
 
-    await cEthContract.methods.mint().send({
-      from: walletAddress,
-      value: Web3.utils.toHex(Web3.utils.toWei(value.toString(), 'ether')),
-    });
-  };
+      const erc20Contract = new ethLibrary.Contract(asset.cContractAbi, erc20ContractAddress);
 
-  handleOnClickWithdraw = async () => {
-    const { value } = this.state;
-    console.log('from withdraw', value);
+      const unlimitedAmount = bigNumber(2).power(256).minus(1);
+      await erc20Contract.methods.approve(cErc20ContractAddress, unlimitedAmount).send({
+        from: walletAddress,
+      });
 
-    const { ethLibrary } = this.context;
+      const updatedAssets = assets.map((item) => {
+        if (item === asset) {
+          item.isApproved = true;
+          return item;
+        }
+        return item;
+      });
+      updateAssets(updatedAssets);
+    },
+    [web3Context, assets]
+  );
 
-    const contractAddress = process.env.REACT_APP_CETH_ADDRESS;
-    const abiJson = abi.cEthAbi;
-    const cEthContract = new ethLibrary.Contract(abiJson, contractAddress);
+  const handleOnClickBorrow = useCallback(
+    async (asset) => {
+      const walletAddress = web3Context.account;
+      const ethLibrary = web3Context.library.eth;
 
-    const ethDecimals = 18;
-    const accounts = await ethLibrary.getAccounts();
-    const walletAddress = accounts[0];
+      //* Comptroller contract
+      const comptrollerInstance = new ethLibrary.Contract(comptroller.abi, comptroller.address);
 
-    let cTokenBalance = (await cEthContract.methods.balanceOf(walletAddress).call()) / 1e8;
+      //* Price feed
+      const priceFeedInstance = new ethLibrary.Contract(priceFeed.abi, priceFeed.address);
 
-    await cEthContract.methods.redeem(cTokenBalance * 1e8).send({
-      from: walletAddress,
-    });
-  };
+      //* Underlying asset to borrow : Dai
+      const daiContract = new ethLibrary.Contract(asset.cContractAbi, asset.contractAddress);
 
-  render() {
-    const etherInfo = {
-      title: 'Ether',
-      supplyAPY: 12.4,
-      distributionAPY: 0,
-      borrowLimit: 7.07,
-      borrowLimitUsed: 0,
-      walletBalance: 0.1386,
-    };
-    const daiInfo = {
-      title: 'Dai',
-      supplyAPY: 10.4,
-      distributionAPY: 0,
-      borrowLimit: 1.07,
-      borrowLimitUsed: 0,
-      walletBalance: 0.1386,
-    };
-    return (
-      <>
-        <h2 className="mb-5">Supply</h2>
-        <Table borderless>
-          <thead>
-            <tr>
-              <th>Asset</th>
-              <th>APY</th>
-              <th>Wallet</th>
-              <th>Collateral</th>
-            </tr>
-          </thead>
-          <tbody>
+      //*bCDAI Contract
+      const cDaiContract = new ethLibrary.Contract(asset.cContractAbi, asset.cContractAddress);
+
+      console.log('Calculating your liquid assets in the protocol...');
+      let { 1: liquidity } = await comptrollerInstance.methods.getAccountLiquidity(walletAddress).call();
+      liquidity = liquidity / 1e18;
+
+      console.log(liquidity);
+    },
+    [web3Context, amount, comptroller, priceFeed]
+  );
+
+  const handleOnClickRepay = useCallback(
+    async (asset) => {
+      const walletAddress = web3Context.account;
+      const ethLibrary = web3Context.library.eth;
+
+      const contractInstance = new ethLibrary.Contract(asset.cContractAbi, asset.cContractAddress);
+
+      if (asset.isErc20) {
+        const withdrawAmount = amount * Math.pow(10, asset.decimals);
+
+        await contractInstance.methods
+          .redeemUnderlying(web3Context.library.utils.toBN(withdrawAmount.toString()))
+          .send({
+            from: walletAddress,
+          });
+      }
+      if (!asset.isErc20) {
+        await contractInstance.methods
+          .redeemUnderlying(web3Context.library.utils.toWei(amount.toString(), 'ether'))
+          .send({
+            from: walletAddress,
+          });
+      }
+    },
+    [web3Context, amount]
+  );
+
+  return (
+    <>
+      <h2 className="mb-5">Borrow</h2>
+      <Table borderless>
+        <thead>
+          <tr>
+            <th>Asset</th>
+            <th>APY</th>
+            <th>Wallet</th>
+            <th>Balance</th>
+            <th>Liquidity</th>
+            <th>% Of Limit</th>
+          </tr>
+        </thead>
+        <tbody>
+          {assets.map((asset) => (
             <tr>
               <th>
                 <ModalForm
-                  assetInfo={etherInfo}
-                  onChangeInput={this.handleOnChangeInput}
-                  onClickSupply={this.handleOnClickSupply}
-                  onClickWithdraw={this.handleOnClickWithdraw}
+                  type="borrow"
+                  assetInfo={asset}
+                  onChangeInput={handleOnChangeAmount}
+                  onClickBorrow={handleOnClickBorrow}
+                  onClickRepay={handleOnClickRepay}
+                  onClickEnable={handleOnClickEnable}
                 ></ModalForm>
               </th>
               <td>0.1%</td>
-              <td>0</td>
-              <td>
-                <div>
-                  <CustomInput type="switch" id="swithEthCollateral" name="customSwitch" />
-                </div>
-              </td>
+              <td>{asset.walletBalance}</td>
+              <td>{asset.underlyingBalance}</td>
+              <td>2k</td>
+              <td>1%</td>
             </tr>
-          </tbody>
-          <tbody>
-            <tr>
-              <th>
-                <ModalForm
-                  assetInfo={daiInfo}
-                  onChangeInput={this.handleOnChangeInput}
-                  onClickSupply={this.handleOnClickSupply}
-                  onClickWithdraw={this.handleOnClickWithdraw}
-                ></ModalForm>
-              </th>
-              <td>0.1%</td>
-              <td>0</td>
-              <td>
-                <div>
-                  <CustomInput type="switch" id="swithDaiCollateral" name="customSwitch" />
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </Table>
-      </>
-    );
-  }
-}
+          ))}
+        </tbody>
+        <tbody></tbody>
+      </Table>
+    </>
+  );
+};
 
-export default Supply;
+export default Borrow;

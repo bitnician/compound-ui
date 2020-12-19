@@ -12,7 +12,15 @@ class ModalForm extends Component {
   modalMarkUp = (asset) => {
     const supplyTab = { title: 'Supply', markUp: this.supplyMarkUp({ ...asset }) };
     const withdrawTab = { title: 'Withdraw', markUp: this.withdrawMarkUp({ ...asset }) };
-    const modalTabs = [supplyTab, withdrawTab];
+    const borrowTab = { title: 'Borrow', markUp: this.borrowMarkUp({ ...asset }) };
+    const repayTab = { title: 'Repay', markUp: this.repayMarkUp({ ...asset }) };
+    let modalTabs;
+    if (this.props.type === 'supply') {
+      modalTabs = [supplyTab, withdrawTab];
+    }
+    if (this.props.type === 'borrow') {
+      modalTabs = [borrowTab, repayTab];
+    }
 
     let markUp;
 
@@ -75,6 +83,38 @@ class ModalForm extends Component {
     return markup;
   };
 
+  borrowMarkUp = (asset) => {
+    const markup = (
+      <div>
+        <h4>Borrow Rate</h4>
+        <p>Borrow APY: {asset.supplyAPY}</p>
+        <p>Distribution APY: {asset.distributionAPY}</p>
+        <hr />
+        <h4>Borrow Limit</h4>
+        <p>Borrow Balance: {asset.borrowLimit}</p>
+        <p>Borrow Limit Used: {asset.borrowLimitUsed}</p>
+        <hr />
+        <Button onClick={() => this.props.onClickBorrow(asset)} color="primary">
+          Borrow
+        </Button>
+      </div>
+    );
+    return markup;
+  };
+  repayMarkUp = (asset) => {
+    const markup = (
+      <div>
+        <h4>Borrow Rate</h4>
+        <p>Borrow APY: {asset.supplyAPY}</p>
+        <p>Distribution APY: {asset.distributionAPY}</p>
+        <hr />
+        <Button onClick={() => this.props.onClickRepay(asset)} color="primary">
+          Repay
+        </Button>
+      </div>
+    );
+    return markup;
+  };
   withdrawMarkUp = (asset) => {
     const markup = (
       <div>

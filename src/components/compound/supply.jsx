@@ -89,7 +89,8 @@ const Supply = () => {
       });
 
       const updatedAssets = await Promise.all(assetsPromise);
-      updateAssets(updatedAssets);
+      return updatedAssets;
+      // updateAssets(updatedAssets);
     },
     [web3Context]
   );
@@ -119,7 +120,9 @@ const Supply = () => {
       });
 
       const updatedAssets = await Promise.all(updatedAssetsPromis);
-      updateAssets(updatedAssets);
+      return updatedAssets;
+
+      // updateAssets(updatedAssets);
     },
     [web3Context]
   );
@@ -140,18 +143,25 @@ const Supply = () => {
         return item;
       });
 
-      updateAssets(updatedAssets);
+      return updatedAssets;
+
+      // updateAssets(updatedAssets);
     },
     [web3Context, comptroller]
   );
 
+  const updateAssetState = useCallback(async () => {
+    let updatedAssets = await getAssetsBalance(assets);
+    updatedAssets = await isApproved(updatedAssets);
+    updatedAssets = await getAssetsIn(updatedAssets);
+    updateAssets(updatedAssets);
+  }, [assets, getAssetsBalance, isApproved, getAssetsIn]);
+
   useEffect(() => {
     if (web3Context.active) {
-      getAssetsBalance(assets);
-      // isApproved(assets);
-      // getAssetsIn(assets);
+      updateAssetState();
     }
-  }, [web3Context, assets, getAssetsBalance, isApproved, getAssetsIn]);
+  }, [updateAssetState, web3Context]);
 
   const handleOnChangeAmount = useCallback(({ currentTarget: input }) => {
     setAmount(input.value);
@@ -293,6 +303,7 @@ const Supply = () => {
             <tr>
               <th>
                 <ModalForm
+                  type="supply"
                   assetInfo={asset}
                   onChangeInput={handleOnChangeAmount}
                   onClickSupply={handleOnClickSupply}
