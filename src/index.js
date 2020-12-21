@@ -4,8 +4,9 @@ import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
 //* Web3
-import { Web3Provider } from '@ethersproject/providers';
+
 import { Web3ReactProvider } from '@web3-react/core';
+import CompoundLensProvider from './contexts/compoundLensContexts';
 import Web3 from 'web3';
 
 function getLibrary(provider) {
@@ -17,7 +18,9 @@ function getLibrary(provider) {
 ReactDOM.render(
   <React.StrictMode>
     <Web3ReactProvider getLibrary={getLibrary} libraryName="web3.js" web3Api={Web3}>
-      <App />
+      <CompoundLensProvider>
+        <App />
+      </CompoundLensProvider>
     </Web3ReactProvider>
   </React.StrictMode>,
   document.getElementById('root')
