@@ -1,9 +1,12 @@
 {
   "name": "compound-interface",
-  "version": "14.15.1",
+  "version": "1.0.0",
   "private": true,
   "prettier": {
     "singleQuote": true
+  },
+  "engines": {
+    "node": "14.x"
   },
   "dependencies": {
     "@ethersproject/providers": "^5.0.17",
