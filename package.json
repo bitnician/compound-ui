@@ -1,6 +1,6 @@
 {
   "name": "compound-interface",
-  "version": "0.1.0",
+  "version": "14.15.1",
   "private": true,
   "prettier": {
     "singleQuote": true
