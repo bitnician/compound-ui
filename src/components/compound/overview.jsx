@@ -15,6 +15,7 @@ const Overview = () => {
     accountInfo: {},
     cf: {},
   });
+
   // const [comptroller] = useState({
   //   address: process.env.REACT_APP_COMPTROLLER_ADDRESS,
   //   abi: JSON.parse(ABIs.Comptroller.abi),
@@ -31,7 +32,9 @@ const Overview = () => {
       // calcSupplyBalance();
       // getCollateralFactors();
     }
-  });
+  }, [lensValues, lensContext, web3Context]);
+
+  const getBorrowedAndAllAssets = useCallback(() => {}, []);
 
   // const calcSupplyBalance = useCallback(async () => {
   //   const walletAddress = web3Context.account;
@@ -64,27 +67,31 @@ const Overview = () => {
   // }, [web3Context, comptroller]);
 
   return (
-    <Jumbotron fluid>
-      <Container fluid>
-        <ConnectionBanner
-          currentNetwork={web3Context.chainId}
-          requiredNetwork={+process.env.REACT_APP_REQUIRED_NETWORK}
-          onWeb3Fallback={!web3Context.active && !web3Context.error}
-        ></ConnectionBanner>
-        <div className="d-flex justify-content-around">
-          <p>
-            <b>Supply Balance</b>
-            <br />${lensValues.accountInfo.liquidity}
-          </p>
-          <p>Borrow Balance</p>
-        </div>
-        <div className="text-center">
-          <p>
-            <b>Borrow Limit</b>
-          </p>
-        </div>
-      </Container>
-    </Jumbotron>
+    <div className="header header--primary">
+      <div className="header__wrapper">
+        <Container fluid>
+          <ConnectionBanner
+            currentNetwork={web3Context.chainId}
+            requiredNetwork={+process.env.REACT_APP_REQUIRED_NETWORK}
+            onWeb3Fallback={!web3Context.active && !web3Context.error}
+          ></ConnectionBanner>
+          <div className="d-flex justify-content-around">
+            <p>
+              <b>Supply Balance</b>
+            </p>
+            <p>
+              <b>Borrow Balance</b>
+            </p>
+          </div>
+          <div className="text-center">
+            <p>
+              <b>Borrow Limit</b>
+              <br />${lensValues.accountInfo.liquidity}
+            </p>
+          </div>
+        </Container>
+      </div>
+    </div>
   );
 };
 
