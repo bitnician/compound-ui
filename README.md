@@ -7,6 +7,10 @@ This application is just for educational purposes. there is some performance and
 
 http://comp.surge.sh/
 
+
+<img width="1439" alt="Screen Shot 2021-05-07 at 9 16 49 PM" src="https://user-images.githubusercontent.com/26083607/117482426-9a538300-af79-11eb-9707-83c83d4eca7d.png">
+
+
 # Cloning the compound repo
 
 First, you need to clone the compound repository.
