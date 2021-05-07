@@ -1,3 +1,12 @@
+# About project
+
+Since there is no open source UI to interact with compound contracts, I built this react application to send tx to compound contracts and read data from them.
+This application is just for educational purposes. there is some performance and UI issues associated with this application. feel free to participate and create PR.
+
+# Live version:
+
+comp.surge.sh
+
 # Cloning the compound repo
 
 First, you need to clone the compound repository.
