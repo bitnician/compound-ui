@@ -5,7 +5,7 @@ This application is just for educational purposes. there is some performance and
 
 # Live version:
 
-comp.surge.sh
+http://comp.surge.sh/
 
 # Cloning the compound repo
 
