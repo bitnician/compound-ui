@@ -1,5 +1,17 @@
 import React, { useState } from 'react';
-import { TabContent, TabPane, Nav, NavItem, NavLink, Card, Button, CardTitle, CardText, Row, Col } from 'reactstrap';
+import {
+  TabContent,
+  TabPane,
+  Nav,
+  NavItem,
+  NavLink,
+  Card,
+  Button,
+  CardTitle,
+  CardText,
+  Row,
+  Col,
+} from 'reactstrap';
 import classnames from 'classnames';
 
 const TabExample = (props) => {
@@ -13,7 +25,7 @@ const TabExample = (props) => {
     <div>
       <Nav tabs>
         {props.tabs.map((tab, i) => (
-          <NavItem>
+          <NavItem key={i}>
             <NavLink
               style={{ cursor: 'pointer' }}
               className={classnames({ active: activeTab === i })}
@@ -28,7 +40,7 @@ const TabExample = (props) => {
       </Nav>
       <TabContent activeTab={activeTab}>
         {props.tabs.map((tab, i) => (
-          <TabPane tabId={i}>
+          <TabPane tabId={i} key={i}>
             <Row>
               <Col sm="12">{tab.markUp}</Col>
             </Row>

@@ -6,6 +6,7 @@ import _ from 'lodash';
 import { useWeb3React } from '@web3-react/core';
 import { CompoundLensContext } from '../../contexts/compoundLensContexts';
 import Loader from '../loader';
+import BN from 'bn.js';
 const bigNumber = require('big-number');
 
 const Supply = () => {
@@ -82,7 +83,8 @@ const Supply = () => {
         erc20ContractAddress
       );
 
-      const unlimitedAmount = bigNumber(2).power(256).minus(1);
+      // const unlimitedAmount = bigNumber(2).power(256).minus(1);
+      const unlimitedAmount = new BN('2').pow(new BN('256')).sub(new BN('1'));
       await erc20Contract.methods
         .approve(cErc20ContractAddress, unlimitedAmount)
         .send({

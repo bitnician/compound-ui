@@ -25,9 +25,8 @@ const Overview = () => {
 
   useEffect(() => {
     if (web3Context.active && !_.isEmpty(lensContext.compoundLensValues)) {
-      console.log(lensContext.compoundLensValues);
-
       setLensValue(lensContext.compoundLensValues);
+      console.log(lensContext.compoundLensValues);
 
       // calcSupplyBalance();
       // getCollateralFactors();

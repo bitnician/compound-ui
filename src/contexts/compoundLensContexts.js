@@ -6,6 +6,7 @@ import React, {
   useCallback,
 } from 'react';
 import ABIs from '../abi/contracts.json';
+import borrowABI from '../abi/borrow.json';
 import addresses from '../abi/addresses.json';
 import { roundToTwo, capitalizeFirstLetter } from '../utils/utils';
 import { useWeb3React } from '@web3-react/core';
@@ -16,6 +17,10 @@ const CompoundLensProvider = (props) => {
   const web3Context = useWeb3React();
   const [compoundLensContract, setCompoundLensContract] = useState(null);
   const [compoundLensValues, setCompoundLensValues] = useState({});
+  const [priceFeed] = useState({
+    abi: borrowABI.priceFeedAbi,
+    address: process.env.REACT_APP_PRICEFEED_ADDRESS,
+  });
 
   const updateCollatral = useCallback((assets, accountMarkets) => {
     return assets.map((asset) => {
@@ -29,6 +34,63 @@ const CompoundLensProvider = (props) => {
       return asset;
     });
   }, []);
+
+  const getAccountSupplyAndBorrowBalances = useCallback(
+    (assets, markets) => {
+      let supplyBalnce = 0;
+      let borrowBalance = 0;
+      assets.forEach((asset) => {
+        const key = Object.keys(asset)[0];
+
+        markets.forEach((market) => {
+          if (asset[key].cTokenAddress === market) {
+            if (asset[key].borrowBalanceCurrent > 0) {
+              borrowBalance +=
+                asset[key].borrowBalanceCurrent * asset[key].usdValue;
+            }
+            if (asset[key].balanceOfUnderlying > 0) {
+              supplyBalnce +=
+                asset[key].balanceOfUnderlying * asset[key].usdValue;
+            }
+          }
+        });
+      });
+
+      console.log(supplyBalnce, borrowBalance);
+
+      return { supplyBalnce, borrowBalance };
+    },
+    [web3Context, priceFeed]
+  );
+
+  const getAssetUSDPrice = useCallback(
+    async (assets, markets) => {
+      const walletAddress = web3Context.account;
+      const ethLibrary = web3Context.library.eth;
+
+      const priceFeedContract = new ethLibrary.Contract(
+        priceFeed.abi,
+        priceFeed.address
+      );
+
+      const usdValuesPromise = assets.map(async (asset) => {
+        const key = Object.keys(asset)[0];
+
+        const usdValue = await priceFeedContract.methods
+          .getUnderlyingPrice(asset[key].cTokenAddress)
+          .call();
+
+        asset[key].usdValue = usdValue;
+
+        return asset;
+      });
+
+      const updatedAssets = await Promise.all(usdValuesPromise);
+
+      return updatedAssets;
+    },
+    [web3Context, priceFeed]
+  );
 
   const updateIsApproved = useCallback(
     async (assets) => {
@@ -206,13 +268,26 @@ const CompoundLensProvider = (props) => {
 
       updatedAssetInfo = updateCollatral(updatedAssetInfo, accountInfo.markets);
 
+      updatedAssetInfo = await getAssetUSDPrice(
+        updatedAssetInfo,
+        accountInfo.markets
+      );
+
+      const { supplyBalnce, borrowBalance } = getAccountSupplyAndBorrowBalances(
+        updatedAssetInfo,
+        accountInfo.markets
+      );
+
+      accountInfo.supplyBalnce = supplyBalnce;
+      accountInfo.borrowBalance = borrowBalance;
+
       setCompoundLensValues({
         assetInfo: updatedAssetInfo,
         accountInfo,
         cf: collateralFactorSum,
       });
     },
-    [web3Context, updateIsApproved, updateCollatral]
+    [web3Context, updateIsApproved, updateCollatral, getAssetUSDPrice]
   );
 
   useEffect(() => {
